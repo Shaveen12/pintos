@@ -38,6 +38,8 @@
 #include "filesys/fsutil.h"
 #endif
 
+static void shell(void);
+
 /* Page directory with kernel mappings only. */
 uint32_t *init_page_dir;
 
@@ -126,14 +128,15 @@ pintos_init (void)
   locate_block_devices ();
   filesys_init (format_filesys);
 #endif
-
+  printf("Hello world brother!\n");
   printf ("Boot complete.\n");
   
   if (*argv != NULL) {
     /* Run actions specified on kernel command line. */
     run_actions (argv);
   } else {
-    // TODO: no command line passed to kernel. Run interactively 
+    // TODO: no command line passed to kernel. Run interactively
+    shell(); 
   }
 
   /* Finish up. */
@@ -431,3 +434,28 @@ locate_block_device (enum block_type role, const char *name)
     }
 }
 #endif
+
+static void shell(void) {
+  char command[128];
+  while (true) {
+    printf("CS2042> ");
+    input_getline(command, sizeof(command));
+    if (strcmp(command, "exit") == 0)
+      break;
+    else if (strcmp(command, "whoami") == 0)
+      printf("Name: Your Name, Index: Your Index\n");
+    else if (strcmp(command, "shutdown") == 0)
+      shutdown_power_off();
+    else if (strcmp(command, "time") == 0) {
+      int64_t time = timer_ticks() / TIMER_FREQ;
+      printf("Time: %lld seconds since Unix epoch\n", time);
+    } else if (strcmp(command, "ram") == 0)
+      printf("RAM: %" PRIu32 " KB\n", init_ram_pages * PGSIZE / 1024);
+    else if (strcmp(command, "thread") == 0)
+      thread_print_stats();
+    else if (strcmp(command, "priority") == 0)
+      printf("Priority: %d\n", thread_get_priority());
+    else
+      printf("Unknown command: %s\n", command);
+  }
+}

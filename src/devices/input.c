@@ -50,3 +50,19 @@ input_full (void)
   ASSERT (intr_get_level () == INTR_OFF);
   return intq_full (&buffer);
 }
+
+void input_getline(char *buffer, size_t size) {
+  size_t i = 0;
+  while (i < size - 1) {
+    char c = input_getc();
+    if (c == '\r' || c == '\n') {
+      buffer[i] = '\0';
+      printf("\n");
+      return;
+    } else {
+      buffer[i++] = c;
+      printf("%c", c);
+    }
+  }
+  buffer[i] = '\0';
+}
