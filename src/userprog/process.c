@@ -198,7 +198,7 @@ struct Elf32_Phdr
 #define PF_W 2          /* Writable. */
 #define PF_R 4          /* Readable. */
 
-static bool setup_stack (void **esp);
+static bool setup_stack (void **esp, char** arv, int argc);
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
 static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
@@ -222,9 +222,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
   int argc = 0;
   char *token, *save_ptr;
 
-  for (token = strtok_r(file_name, " ", &save_ptr); toekn != NULL; token = strtok_r(NULL, " ", &save_ptr))
+  for (token = strtok_r(file_name, " ", &save_ptr); token != NULL; token = strtok_r(NULL, " ", &save_ptr))
   {
-    arv[argc++] = token;
+    argv[argc++] = token;
   }
 
   /* Allocate and activate page directory. */
