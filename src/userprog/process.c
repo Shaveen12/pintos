@@ -87,7 +87,10 @@ start_process (void *file_name_)
    does nothing. */
 int
 process_wait (tid_t child_tid UNUSED) 
-{
+{ 
+  while (true) {
+    continue;
+  }
   return -1;
 }
 
@@ -215,6 +218,15 @@ load (const char *file_name, void (**eip) (void), void **esp)
   bool success = false;
   int i;
 
+  char *argv[128];
+  int argc = 0;
+  char *token, *save_ptr;
+
+  for (token = strtok_r(file_name, " ", &save_ptr); toekn != NULL; token = strtok_r(NULL, " ", &save_ptr))
+  {
+    arv[argc++] = token;
+  }
+
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
   if (t->pagedir == NULL) 
@@ -302,7 +314,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
     }
 
   /* Set up stack. */
-  if (!setup_stack (esp))
+  if (!setup_stack (esp, argv, argc))
     goto done;
 
   /* Start address. */
@@ -427,7 +439,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 static bool
-setup_stack (void **esp) 
+setup_stack (void **esp, char **argv, int argc) 
 {
   uint8_t *kpage;
   bool success = false;
@@ -436,11 +448,47 @@ setup_stack (void **esp)
   if (kpage != NULL) 
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
-      if (success)
+      if (success) {
         *esp = PHYS_BASE;
+        
+        }
+        // PANIC("End of argument printing reached.");
+        for (int i = argc - 1; i >= 0; i--) {
+            *esp -= strlen(argv[i]) + 1; // Move stack pointer down
+            memcpy(*esp, argv[i], strlen(argv[i]) + 1); // Copy argument to stack
+            argv[i] = *esp; // Update argv to point to the stack
+        }
+
+        // Word-align the stack pointer
+        *esp = (void *)((unsigned int)(*esp) & ~3); // Align to 4 bytes
+
+        // Push null pointer sentinel
+        *esp -= 4; // Move stack pointer down for null sentinel
+        *(int *)(*esp) = 0; // Push null pointer
+
+        // Push addresses of arguments (argv)
+        for (int i = argc - 1; i >= 0; i--) {
+            *esp -= 4; // Move stack pointer down for each argument address
+            *(char *)(*esp) = argv[i]; // Push address of argument
+        }
+
+        // Push argv
+        *esp -= 4; // Move stack pointer down for argv
+        *(char **)(*esp) = *esp + 4; // Push address of argv
+
+        // Push argc
+        *esp -= 4; // Move stack pointer down for argc
+        *(int *)(*esp) = argc; // Push argc
+
+        // Push fake return address
+        *esp -= 4; // Move stack pointer down for return address
+        *(int *)(*esp) = 0; // Push fake return address
+      }
       else
         palloc_free_page (kpage);
-    }
+
+  // hex_dump(0,*esp,1024,true);
+  printf("Number of arguments : %d\n", argc);
   return success;
 }
 
